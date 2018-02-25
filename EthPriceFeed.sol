@@ -28,12 +28,12 @@ contract EthPriceFeed is usingOraclize {
         owner = msg.sender;
         
         params["frequency"]         = 60;
-        params["cutoff"]            = 0.1 * 1 ether;
+        params["cutoff"]            = 100;
         
         query["query"]              = "json(https://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd";
         query["type"]               = "URL";
         
-        priceMultiple               = 10;
+        priceMultiple               = 2;
         price                       = parseInt("1000.01",priceMultiple);
         lastUpdate                  = now;
     }
@@ -67,31 +67,29 @@ contract EthPriceFeed is usingOraclize {
     }
     
     function getBalance() view public returns(uint) {
-        return this.balance;
+        return this.balance / 1 finney;
     }
     
     function getFundingAddress() view public returns(address) {
         return fundingAddress;
     }
     
-    function setFundingAddress(adress addr) public ownerOnly {
+    function setFundingAddress(address addr) public ownerOnly {
         fundingAddress = addr;
         dad = Dad(addr);
     }
     
-    
-    function deposit() public payable {
+    function () public payable {
     }
     
-    function depositAndUpdate() public payable {
-        require(msg.sender==owner || msg.sender == fundingAddress);
-        updatePrice();
+    function startUpdates() public {
+        if (msg.sender == owner || msg.sender == fundingAddress) updatePrice();
     }
-
     
     function updatePrice() private {
-        require(now - lastOracalizeCall > (params["frequency"] -10) * 1 seconds);
-        if (this.balance < params["cutoff"] * 1 ether) {
+        ///Make sure we don't start too many parallel calls to Oracalize
+        if (now - lastOracalizeCall < (params["frequency"] -20) * 1 seconds) revert();
+        if (this.balance < params["cutoff"] * 1 finney) {
             AskDadForCash("Insufficient ammount to peform query, asking parent for cash...");
             dad.fundPriceFeed();
         } else {
@@ -101,12 +99,57 @@ contract EthPriceFeed is usingOraclize {
         }
     }
     
+    function withdraw(uint amount) public ownerOnly {
+        uint value = amount * 1 finney;
+        require(value < this.balance);
+        msg.sender.transfer(value);
+    }
+    
     function kill() public ownerOnly{
         selfdestruct(owner);
     }
 }
 
+///Skeleton function for the deposit to the price feed. 
 contract Dad {
-    function fundPriceFeed() public {
+    address private fundAddress;
+    address private owner;
+    EthPriceFeed ethPrice;
+    
+    event SendFundingToAddress(address addr);
+    
+    modifier ownerOnly() {
+        require(msg.sender == owner || msg.sender == fundAddress);
+        _;
+    }
+    
+    function Dad() public {
+        owner = msg.sender;
+    }
+    
+    function setFundingAddress(address addr) public ownerOnly {
+        fundAddress = addr;
+        ethPrice = EthPriceFeed(addr);
+    }
+    
+    function getBalance() view public returns(uint) {
+        return this.balance / 1 finney;
+    }
+    
+    
+    function deposit() public payable {
+    }
+    
+    ///function to fund the price feed. Can be called only by it of the owner
+    function fundPriceFeed() public ownerOnly {
+        if (this.balance > 101 * 1 finney) {
+            SendFundingToAddress(fundAddress);
+            fundAddress.transfer(101 * 1 finney);
+            ethPrice.startUpdates();
+        }
+    }
+    
+    function kill() public ownerOnly{
+        selfdestruct(owner);
     }
 }
