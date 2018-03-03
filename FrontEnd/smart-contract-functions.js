@@ -1,8 +1,5 @@
 window.addEventListener('load', function() {
-
-  // Checking if Web3 has been injected by the browser (Mist/MetaMask)
   if (typeof web3 !== 'undefined') {
-  // Use Mist/MetaMask's provider
     window.web3 = new Web3(web3.currentProvider);
   } else {
     document.getElementById('network').innerHTML = "Failed connecting to network, please make sure you have <b>MetaMask</b> enabled and refresh the page!"
@@ -11,16 +8,6 @@ window.addEventListener('load', function() {
   showNetwork();
   showContractData();
 	fetchAccountBalance();
-	$("#slider").roundSlider({
-    handleShape: "dot",
-    width: 80,
-    radius: 200,
-    value: 41,
-    min: "5",
-    sliderType: "min-range",
-    handleSize: "+10",
-    mouseScrollAction: true
-	});
 })
 
 function showNetwork() {
@@ -53,9 +40,9 @@ function showNetwork() {
       }
       document.getElementById('network').innerHTML =  output;
     })
-  }
+}
 
-  function showGetBalance() {
+function showGetBalance() {
     web3.eth.getAccounts((err, res) => {
       var output = "";
       if (!err) {
@@ -64,24 +51,25 @@ function showNetwork() {
             if (!err2) {
 							document.getElementById('userAddress').innerHTML = defaultAccount;
 							document.getElementById('balance').innerHTML = web3.fromWei(res2, 'ether');
+							metaMaskEther = web3.fromWei(res2, 'ether');
             } else {
-              output = "Error2";
+              output = "Unable to get balance.";
               document.getElementById('balance').innerHTML = output;
             }
           })
       } else {
-        output = "Error1";
+        output = "Unable to get main account";
         document.getElementById('balance').innerHTML = output;
       }
     })
     setTimeout(showGetBalance, 5000);
-  }
+}
 
-  function showContractData() {
+function showContractData() {
     document.getElementById('contractAddress').innerHTML = "<b>"+contractAddress+"</b>";
-  }
+}
 
-  function fetchAccountBalance() {
+function fetchAccountBalance() {
     web3.eth.getAccounts((err, res) => {
       var output = "";
       if (!err) {
@@ -90,7 +78,8 @@ function showNetwork() {
 
         contract.getAccountData(defaultAccount, (err2,res2) => {
           if (!err2) {
-            output = res2;
+						output = res2;
+						availableEther = web3.fromWei(res2[0], 'ether');
             document.getElementById('ETH').innerHTML = web3.fromWei(res2[0], 'ether');
 						document.getElementById('SE').innerHTML = (res2[1])/(1000);
 						document.getElementById('stakedETH').innerHTML = web3.fromWei(res2[2], 'ether');
@@ -106,11 +95,128 @@ function showNetwork() {
       }
     })
     setTimeout(fetchAccountBalance, 5000);
-  }
+}
 
 
+function changedSelection(val) {
+			switch (val) {
+				case "Please Select":
+					bottomButton(0,"");
+					clearSlider();
+					mainHeading("");
+				break;
+				case "Deposit Ether":
+					bottomButton(1,"Deposit");
+					singleSlider(0,metaMaskEther*1000,"min-range");
+					mainHeading("Amount of Ether to deposit in 0.001 (1000 = 1 ether)");
+				break;
+				case "Sell/Stake Ether":
+					bottomButton(1,"Stake");
+					singleSlider(0,availableEther*1000,"range");
+					mainHeading("Amount of Ether to sell in 0.001 (1000 = 1 ether) and what part of it to stake instead (subject to 5% fee).");
+				break;
+				case "Redeem Stake":
+					bottomButton(1,"Redeem");
+				break;
+				case "Buy Ether":
+				bottomButton(1,"Buy");
+				break;
+				case "Withdraw Ether":
+					bottomButton(1,"Withdraw");
+					singleSlider(0,availableEther*1000,"min-range");
+					mainHeading("Amount of Ether to withdraw (subject to 5% fee) in 0.001 (1000 = 1 ether).");
+				break;
+				default:
+					bottomButton(0,"");
+					mainHeading("");
+					clearSlider();
+			}
+	}
+	
+	function bottomButton(show,name) {
+		if (show) {
+			document.getElementById('submit').innerHTML = "<button type='button' id='price' onclick='"+name+"GoButton()'>"+name+"</button>";
+		} else {
+			document.getElementById('submit').innerHTML = "";
+		}
+	}
 
-const contractAddress = "0x87486149fdfacdc871d96a281978b8fb77f9b630"
+	function DepositGoButton() {
+		var obj = $("#slider").data("roundSlider");
+		var val = obj.option("value");
+		var message = {to:contractAddress, value: web3.toWei(val, 'finney')};
+		web3.eth.sendTransaction(message, (err, res) => {
+      var output = "";
+      if (!err) {
+        alert("Transaction successfull. Transaction hash: "+ res);
+      } else {
+        alert("Error sending the transaction!");
+      }
+      document.getElementById('transactionResponse').innerHTML = "Transaction response= " + output + "<br />";
+    })
+	}
+
+	function WithdrawGoButton() {
+		var obj = $("#slider").data("roundSlider");
+		var val = obj.option("value");
+		let contract = web3.eth.contract(contractABI).at(contractAddress);
+
+    contract.withdrawEther(web3.toWei(val, 'finney'), (err,res) => {
+      if (!err) {
+				alert("Transaction submitted succesfully. Transaction hash: "+ res);
+      } else {
+        alert("Error sending the transaction!");
+      }
+    })
+	}
+
+	function StakeGoButton() {
+		var obj = $("#slider").data("roundSlider");
+		var split = obj.option("value").split(",");
+		var val1 = parseInt(split[0]);
+		var val2 = parseInt(split[1]);
+		
+		console.log(val1);
+		console.log(val2);
+		let contract = web3.eth.contract(contractABI).at(contractAddress);
+
+    contract.sellEther(web3.toWei(val2, 'finney'), (val1/val2)*1000, (err,res) => {
+      if (!err) {
+				alert("Transaction submitted succesfully. Transaction hash: "+ res);
+      } else {
+        alert("Error sending the transaction!");
+      }
+    })
+	}
+
+function mainHeading(header) {
+	document.getElementById('mainHeader').innerHTML = header;
+}
+	
+function singleSlider(min, max,type) {
+	$("#slider").roundSlider("destroy");
+	$("#slider").roundSlider({
+    handleShape: "dot",
+    width: 80,
+    radius: 250,
+    value: min,
+		min: min,
+		max: max,
+    sliderType: type,
+    handleSize: "+10",
+    mouseScrollAction: true
+	});
+}
+
+
+function clearSlider() {
+	$("#slider").roundSlider("destroy");
+
+}
+
+var metaMaskEther = 0;
+var availableEther = 0;
+const contractAddress = "0x87486149fdfacdc871d96a281978b8fb77f9b630";
 const contractABI = [
 	{
 		"constant": true,
@@ -298,6 +404,3 @@ const contractABI = [
 	}
 ];
 
-function changedSelection() {
-	console.log("Here");
-}

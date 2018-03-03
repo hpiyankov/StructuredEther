@@ -21,17 +21,21 @@
         <span class="tooltip">hedge agains Ether's price dorpping<span class="tooltiptext">You stake 1 ether at 1000 USD. If the price goes up, you redeem the stake. If the price goes down you purchase discounted Ethers with the loan money.</span></span>
         or you can obtain up to <span class="tooltip">20x leverage on your Ethers<span class="tooltiptext">You stake 1 ether and get a loan. With the loan you purchase more ether and stake it as well... and so on.</span></span>
         , if you are very bullish on the price.
+        <hr>
         </p>
+        
     </div>
+    <div class="brake"></div>
     <div class="mainControl">
         <p id="Control">
             <span id="price">Current price: 1000 USD</span>
         
-        <select id="Action" name="Action" onchange="changedSelection()">
+        <select id="dropdown" name="Action" onchange="changedSelection(this.value)">
                 <option selected="">Please Select</option>
                 <option>Deposit Ether</option>
-                <option>Stake Ether</option>
+                <option>Sell/Stake Ether</option>
                 <option>Redeem Stake</option>
+                <option>Buy Ether</option>
                 <option>Withdraw Ether</option>
               </select>
         </p>
@@ -59,7 +63,7 @@
             <fieldset>
                 <legend id="fieldsLegend">Structured Ether balance</legend>
                 <b><span id="SE"></span></b>
-            </fieldset>  
+            </fieldset>    
             <fieldset>
                 <legend id="fieldsLegend">Staked Ether balance</legend>
                 <b><span id="stakedETH"></span></b>
@@ -96,7 +100,14 @@
             </fieldset>
         </div>
     </div>
+    <div class ="sliderHead">
+            <div id="mainHeader"></div>
+    </div>
     <div class="main">
         <div id="slider"></div>
+        <div id="slider2"></div>
     </div>  
+    <div class="bottom">
+        <div id="submit"></div>
+    </div>
 </body>

@@ -59,11 +59,16 @@
         padding-right: 10px;
         line-height: 200%;
     }
-    .mainControl {
+    .brake{
         position:absolute;
         left:450px; top:120px; bottom:0; right:0;
+        height: 5px;
+    }
+    .mainControl {
+        position:absolute;
+        left:450px; top:125px; bottom:0; right:0;
         text-align: center;
-        height: 120px;
+        height: 110px;
     }
     #price {
         background: #708090;
@@ -71,30 +76,41 @@
         padding-right: 10px;
         padding-top: 10px;
         padding-bottom: 10px;
+        margin-right: 50px;
         font-size: 45px;
-        border:20px solid rgb(230, 230, 230);
+        border:0px solid rgb(230, 230, 230);
         color: rgb(230, 230, 230);
          -moz-border-radius:30px;
          -webkit-border-radius:30px;	
         border-radius:30px;	
     }
-    #Action {
+    #dropdown {
         background: #708090;
         padding-left: 10px;
         padding-right: 10px;
         padding-top: 10px;
         padding-bottom: 10px;
         font-size: 45px;
-        border:20px solid rgb(230, 230, 230);
+        border:0px solid rgb(230, 230, 230);
         color: rgb(230, 230, 230);
          -moz-border-radius:30px;
          -webkit-border-radius:30px;	
         border-radius:30px;	 
     }
+    .sliderHead {
+        position: absolute;
+        left:450px; top:230px; right:0; bottom:0;
+        height: 50;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        font-size: 25px;
+    }
 
     .main {
         position: absolute;
-        left:450px; top:240px; right:0; bottom:0;
+        left:450px; top:280px; right:0; bottom:0;
+        height: 550px;
         display:flex;
         justify-content:center;
         align-items:center;
@@ -127,8 +143,20 @@
         font-size: 12px;
     }
 
+    .bottom {
+        position: absolute;
+        left:450px; top:780px; right:0; bottom:0;
+        display:flex;
+        padding-left: 50px;
+        justify-content:center;
+        align-items:center;
+    }
+
 .top { background: #708090; }
 .left { background: #708090; }
 .main { background: rgb(230, 230, 230); }
 .topIntro {background: rgb(230, 230, 230);}
 .mainControl {background: rgb(230, 230, 230);}
+.bottom {background: rgb(230, 230, 230);}
+.sliderHead {background: rgb(230, 230, 230);}
+.brake { background: #708090; }
