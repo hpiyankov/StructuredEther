@@ -1,0 +1,102 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Structured Ether</title>
+    <link rel="stylesheet" type="text/css" href="structured-ether.css" />
+    <script src="smart-contract-functions.js"></script>
+    <script src="./lib/jquery.min.js"></script>                          
+    <link href="./lib/roundslider.min.css" rel="stylesheet" />
+    <script src="./lib/roundslider.min.js"></script>
+
+</head>
+<body>
+    <div class="topIntro">
+        <p id="Intro">
+        Structured Ether is a new kind of financial product encpausalted in a <span class="tooltip">Smart Contract<span class="tooltiptext">Ownerless executable code on top of the Ethereum blockchain.</span></span>.
+        It allows you to <span class="tooltip">buy and sell<span class="tooltiptext">Sell is always possible. Buy is subject to availability of deposited ethers.</span></span> 
+        Ether according to the current <span class="tooltip">fair global market price<span class="tooltiptext">Aggregated market price from Coin Market Cap.</span></span>.
+        Furthermore you can <span class="tooltip">stake your ethers, locking in their price<span class="tooltiptext">If you stake 2 Ethers at a price of 1000USD per ether, you can later obtain them back always at this fixed price.</span></span> 
+        and recieving a loan of Structured Ethers equal to the price of the amount staked. This way, you can either
+        <span class="tooltip">hedge agains Ether's price dorpping<span class="tooltiptext">You stake 1 ether at 1000 USD. If the price goes up, you redeem the stake. If the price goes down you purchase discounted Ethers with the loan money.</span></span>
+        or you can obtain up to <span class="tooltip">20x leverage on your Ethers<span class="tooltiptext">You stake 1 ether and get a loan. With the loan you purchase more ether and stake it as well... and so on.</span></span>
+        , if you are very bullish on the price.
+        </p>
+    </div>
+    <div class="mainControl">
+        <p id="Control">
+            <span id="price">Current price: 1000 USD</span>
+        
+        <select id="Action" name="Action" onchange="changedSelection()">
+                <option selected="">Please Select</option>
+                <option>Deposit Ether</option>
+                <option>Stake Ether</option>
+                <option>Redeem Stake</option>
+                <option>Withdraw Ether</option>
+              </select>
+        </p>
+    </div>
+    <div class="left">
+        <div id="innerLeft">
+            <br><div id="heading">Strutured Ether</div><br>
+            <fieldset>
+                <legend id="fieldsLegend">Network</legend>
+                <b>Rinkeby</b>
+            </fieldset>
+            <fieldset>
+                <legend id="fieldsLegend">Address</legend>
+                <span id="contractAddress"></span>
+            </fieldset>
+            <br>
+            <div id = "metamask">
+                <b>Your account balance:</b>
+            </div>
+            <br>
+            <fieldset>
+                <legend id="fieldsLegend">Ether balance</legend>
+                <b><span id="ETH"></span></b>
+            </fieldset>    
+            <fieldset>
+                <legend id="fieldsLegend">Structured Ether balance</legend>
+                <b><span id="SE"></span></b>
+            </fieldset>  
+            <fieldset>
+                <legend id="fieldsLegend">Staked Ether balance</legend>
+                <b><span id="stakedETH"></span></b>
+            </fieldset>  
+            <fieldset>
+                <legend id="fieldsLegend">Strutured Ether buyback amount</legend>
+                <b><span id="stakedBuyback"></span></b>
+            </fieldset>  
+            <fieldset>
+                <legend id="fieldsLegend">Staked Ether buyback price</legend>
+                <b><span id="stakedPrice"></span></b>
+            </fieldset>
+            <fieldset>
+                <legend id="fieldsLegend">Interest rate on Structured Ether loan</legend>
+                <b><span id="IR"></span></b>
+            </fieldset>   
+            <br>    
+            <div id = "metamask">
+                <b>Your metamask connection:</b><br>
+                <img src="./images/metamask.png" alt="Metamask"><br>
+            </div>
+            <br>
+            <fieldset>
+                <legend id"fieldsLegend">Network</legend>
+                <b><span id="network"></span></b>
+            </fieldset>
+            <fieldset>
+                <legend id"fieldsLegend">Active wallet address</legend>
+                <span id="userAddress">No data. Please log in <b> MetaMask</b>!</span>
+            </fieldset>
+            <fieldset>
+                <legend id"fieldsLegend">Available Ether</legend>
+                <span id="balance">No data. Please log in <b> MetaMask</b>!</span>
+            </fieldset>
+        </div>
+    </div>
+    <div class="main">
+        <div id="slider"></div>
+    </div>  
+</body>

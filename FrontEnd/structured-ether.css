@@ -1,0 +1,134 @@
+    html *
+    {
+        font-family: "Ubuntu" !important;
+    }
+    .tooltip {
+        background: #708090;
+        padding: 3px;
+        color: rgb(230, 230, 230);
+        border:2px solid rgb(230, 230, 230);
+         -moz-border-radius:8px;
+         -webkit-border-radius:8px;	
+        border-radius:8px;	
+    }
+    
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 240px;
+        background-color: #708090;;
+        color: rgb(230, 230, 230);
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        font-size: 12px;
+        line-height: 150%;
+        /* Position the tooltip */
+        position: absolute;
+        z-index: 1;
+    }
+    
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+    }
+      
+    .left {
+        
+        position:absolute;
+        left:0; top:0px; bottom: 0;
+        width: 450px;
+    }
+    #innerLeft {
+        display:block;
+        padding-left: 10px;
+        padding-right: 10px;
+        color: rgb(230, 230, 230);
+    }
+    #metamask {
+        font-size: 20px;
+        text-align: center;
+    }
+    
+    .topIntro {
+        position:absolute;
+        left:450px; top:0px; bottom:0; right:0;
+        height: 120px;
+    }
+    #intro {
+        display:block;
+        padding-left: 10px;
+        padding-right: 10px;
+        line-height: 200%;
+    }
+    .mainControl {
+        position:absolute;
+        left:450px; top:120px; bottom:0; right:0;
+        text-align: center;
+        height: 120px;
+    }
+    #price {
+        background: #708090;
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        font-size: 45px;
+        border:20px solid rgb(230, 230, 230);
+        color: rgb(230, 230, 230);
+         -moz-border-radius:30px;
+         -webkit-border-radius:30px;	
+        border-radius:30px;	
+    }
+    #Action {
+        background: #708090;
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        font-size: 45px;
+        border:20px solid rgb(230, 230, 230);
+        color: rgb(230, 230, 230);
+         -moz-border-radius:30px;
+         -webkit-border-radius:30px;	
+        border-radius:30px;	 
+    }
+
+    .main {
+        position: absolute;
+        left:450px; top:240px; right:0; bottom:0;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+    }
+    #heading {
+        display:block;
+        font-size: 45px;
+        text-align: center;
+        color: rgb(230, 230, 230);
+        font-family: "Ubuntu";
+    }
+    fieldset { 
+        display: block;
+        margin-left: 2px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        padding-top: 10px;
+        padding-bottom: 5px;
+        font-weight: bold;
+        border:2px solid rgb(230, 230, 230);
+         -moz-border-radius:8px;
+         -webkit-border-radius:8px;	
+        border-radius:8px;	
+    }
+    legend {
+        display: block;
+        padding-left: 2px;
+        padding-right: 2px;
+        border: none;
+        font-size: 12px;
+    }
+
+.top { background: #708090; }
+.left { background: #708090; }
+.main { background: rgb(230, 230, 230); }
+.topIntro {background: rgb(230, 230, 230);}
+.mainControl {background: rgb(230, 230, 230);}
