@@ -2,8 +2,9 @@ window.addEventListener('load', function() {
   if (typeof web3 !== 'undefined') {
     window.web3 = new Web3(web3.currentProvider);
   } else {
-    document.getElementById('network').innerHTML = "Failed connecting to network, please make sure you have <b>MetaMask</b> enabled and refresh the page!"
-  }
+    alert("Failed connecting to network, please make sure you have <b>MetaMask</b> enabled and refresh the page!");
+	}
+	fetchStaticData();
   showGetBalance();
   showNetwork();
   showContractData();
@@ -36,7 +37,7 @@ function showNetwork() {
           }
         }
       } else {
-        output = "Error";
+        alert("Error getting network");
       }
       document.getElementById('network').innerHTML =  output;
     })
@@ -53,13 +54,11 @@ function showGetBalance() {
 							document.getElementById('balance').innerHTML = web3.fromWei(res2, 'ether');
 							metaMaskEther = web3.fromWei(res2, 'ether');
             } else {
-              output = "Unable to get balance.";
-              document.getElementById('balance').innerHTML = output;
+              alert("Unable to get balance.");
             }
           })
       } else {
-        output = "Unable to get main account";
-        document.getElementById('balance').innerHTML = output;
+        alert("Unable to get main account");
       }
     })
     setTimeout(showGetBalance, 5000);
@@ -69,6 +68,23 @@ function showContractData() {
     document.getElementById('contractAddress').innerHTML = "<b>"+contractAddress+"</b>";
 }
 
+function fetchStaticData() {
+	var defaultAccount = web3.eth.defaultAccount;
+	let contract = web3.eth.contract(contractABI).at(contractAddress);
+
+	contract.getStaticData( (err,res) => {
+		if (!err) {
+			precision = 10**res[0];
+			IRperiod = res[1];
+			IRpct = res[2] / precision;
+			IRcollect = res[3];
+			document.getElementById('IR').innerHTML = IRpct*100 + "% IR per " + IRperiod/60/60/24 + "days collected every " + IRcollect/60 + " minutes";
+		} else {
+			 alert("Error getting static data");
+		}
+	})
+}
+
 function fetchAccountBalance() {
     web3.eth.getAccounts((err, res) => {
       var output = "";
@@ -76,26 +92,37 @@ function fetchAccountBalance() {
         var defaultAccount = web3.eth.defaultAccount;
         let contract = web3.eth.contract(contractABI).at(contractAddress);
 
-        contract.getAccountData(defaultAccount, (err2,res2) => {
+        contract.getDynamicData(defaultAccount, (err2,res2) => {
           if (!err2) {
-						output = res2;
-						availableEther = Math.floor(web3.fromWei(res2[0], 'ether')*1000)/1000;
-						stakedEther = Math.floor(web3.fromWei(res2[2], 'ether')*1000)/1000;
-						structuredEther = (res2[1])/(1000);
-						stakedPrice = res2[4]/(1000);
-						stakedBuyBack = res2[3]/(1000);
+						availableEther = Math.floor(web3.fromWei(res2[0], 'ether')*precision)/precision;
+						structuredEther = res2[1]/(precision);
+						stakedBuyBack = res2[2]/(precision);
+						stakedPrice = res2[3]/(precision);
+						price = res2[4]/(precision);
+						available = Math.floor(web3.fromWei(res2[5], 'ether')*precision)/precision;
+						liquidity = Math.floor(web3.fromWei(res2[6], 'ether')*precision)/precision;
+
             document.getElementById('ETH').innerHTML = availableEther;
 						document.getElementById('SE').innerHTML = structuredEther;
-						document.getElementById('stakedETH').innerHTML = stakedEther;
 						document.getElementById('stakedBuyback').innerHTML = stakedBuyBack;
 						document.getElementById('stakedPrice').innerHTML = stakedPrice;
-						document.getElementById('IR').innerHTML = "HC 12% per 1 year";
+						document.getElementById('priceUSD').innerHTML = price;
+						document.getElementById('availETH').innerHTML = available;
+						document.getElementById('liquidETH').innerHTML = liquidity;
           } else {
-            output = "Error2";
+            alert("Error getting balances");
+          }
+				})
+				contract.getStakedETH(defaultAccount, (err3,res3) => {
+          if (!err3) {
+						stakedEther = Math.floor(web3.fromWei(res3, 'ether')*precision)/precision;
+						document.getElementById('stakedETH').innerHTML = stakedEther;
+          } else {
+            alert("Error getting balances");
           }
         })
       } else {
-        output = "Error1";
+        alert("Error getting account");
       }
     })
     setTimeout(fetchAccountBalance, 5000);
@@ -188,7 +215,7 @@ function changedSelection(val) {
 		console.log(val2);
 		let contract = web3.eth.contract(contractABI).at(contractAddress);
 
-    contract.sellEther(web3.toWei(val2, 'finney'), (val1/val2)*1000, (err,res) => {
+    contract.sellEther(web3.toWei(val2, 'finney'), (val1/val2)*precision, (err,res) => {
       if (!err) {
 				alert("Transaction submitted succesfully. Transaction hash: "+ res);
       } else {
@@ -255,9 +282,29 @@ var availableEther = 0;
 var stakedEther = 0;
 var structuredEther = 0;
 var stakedPrice = 0;
-var price = 1000;
-const contractAddress = "0x87486149fdfacdc871d96a281978b8fb77f9b630";
+var price = 0;
+var available = 0;
+var precision = 0;
+var IRperiod =0;
+var IRpct =0;
+var IRcollect = 0;
+var liquidity = 0;
+const contractAddress = "0xb997d7d2eb40219aa724602508669ea89cc7af7f";
 const contractABI = [
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getBalance",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
 	{
 		"constant": true,
 		"inputs": [
@@ -266,7 +313,7 @@ const contractABI = [
 				"type": "address"
 			}
 		],
-		"name": "getAccountData",
+		"name": "getDynamicData",
 		"outputs": [
 			{
 				"name": "",
@@ -299,9 +346,40 @@ const contractABI = [
 	},
 	{
 		"constant": true,
-		"inputs": [],
-		"name": "getBalance",
+		"inputs": [
+			{
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "getStakedETH",
 		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getStaticData",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"name": "",
+				"type": "uint256"
+			},
 			{
 				"name": "",
 				"type": "uint256"
@@ -333,26 +411,6 @@ const contractABI = [
 		"payable": false,
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "addr",
-				"type": "address"
-			}
-		],
-		"name": "setFundingAddress",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "constructor"
 	},
 	{
 		"constant": false,
@@ -397,9 +455,51 @@ const contractABI = [
 			{
 				"name": "newPrice",
 				"type": "uint256"
+			},
+			{
+				"name": "updateTime",
+				"type": "uint256"
 			}
 		],
 		"name": "setPrice",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			}
+		],
+		"name": "setFundingAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"name": "stake",
+				"type": "uint256"
+			}
+		],
+		"name": "sellEther",
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
@@ -419,24 +519,6 @@ const contractABI = [
 			}
 		],
 		"name": "redeemStake",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"name": "stake",
-				"type": "uint256"
-			}
-		],
-		"name": "sellEther",
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
