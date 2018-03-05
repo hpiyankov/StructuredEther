@@ -37,6 +37,7 @@ contract StructuredEther {
     /// @param fundingAmmount how much to fund the price feed on each requst
     uint precision;
     uint price;
+    uint lastPriceDate;
     uint taxPCT;
     uint IRperiod;
     uint IRpct;
@@ -96,8 +97,8 @@ contract StructuredEther {
         );
     }
     
-    // @dev this needs to be in a seeprate function otherwise the compiler retursn Stack Too Deep
-    // @return the staked ether minus the expected interest rate on it
+    /// @dev this needs to be in a seeprate function otherwise the compiler retursn Stack Too Deep
+    /// @return the staked ether minus the expected interest rate on it
     function getStakedETH(address account) public view returns(uint) {
         if(msg.sender != owner) {account=msg.sender;}
         
@@ -106,6 +107,8 @@ contract StructuredEther {
         return accounts[account][uint8(a.stakedETH)].sub(interest);
     }
     
+    /// @dev get all the static data which does not change often
+    /// @returns basic calculation information
     function getStaticData() public view returns(uint,uint,uint,uint) {
         return (
             precision,
@@ -117,8 +120,9 @@ contract StructuredEther {
     
     /// @dev Function used to modify the price
     /// @param newPrice ETH/USD price expected with same precision as the precision parameter
-    function setPrice(uint newPrice) public ownerOnly {
+    function setPrice(uint newPrice, uint updateTime) public ownerOnly {
         price = newPrice;
+        lastPriceDate = updateTime;
     }
     
     /// @dev Sell your ether and buy Structured ether. Taxes are collected based on the stake amount. All taxes are trasnfered to the owners account and accessable for further funding.
