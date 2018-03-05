@@ -1,29 +1,48 @@
 pragma solidity ^0.4.18;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
+import "./StructuredEther.sol";
+
+/// @title  Ethereum Price Feed 
+/// @author Hristo Piyankov
+/// @notice Price feed contract, prividng sheduled updated ETH/USD price using Oracalize and coinmarketcap
 
 contract EthPriceFeed is usingOraclize {
     address private owner;
+    
+    /// @dev The Parent address from which funding is requested to keep on calling Oracalize
     address private fundingAddress;
     
-    Dad dad;
+    /// @dev a skeleton of the parent contract used for defining the calls
+    StructuredEther dad;
     
+    /// @dev mapping of all the string  query parameters
     mapping (bytes24=>string) private query;
+    
+    /// @dev mapping of all the int query parameters
     mapping (bytes24=>uint) private params;
     
+    /// @param price the last recorded price
+    /// @param lastUpdate date of the last oracalie __callback
+    /// @param lastOracalizeCall date when oracalize was last called
+    /// @param priceMultiple the decimal precision
     uint256 private price;
     uint256 private lastUpdate;
     uint256 private lastOracalizeCall;
     uint8 private priceMultiple;   
     
+    /// @dev loggind of events related to calling oracalize
     event LogPriceUpdated(string price);
     event LogNewOraclizeQuery(string description);
     event AskDadForCash(string description);
  
+    /// @dev functions callable only by the owner
     modifier ownerOnly() {
         require(msg.sender == owner);
         _;
     }
     
+    /// @dev inistial values for the parameters
+    /// ParseInt is an oracalie function for decimal string to int conversion
     function EthPriceFeed() public {
         owner = msg.sender;
         
@@ -33,10 +52,11 @@ contract EthPriceFeed is usingOraclize {
         query["query"]              = "json(https://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd";
         query["type"]               = "URL";
         
-        priceMultiple               = 2;
-        price                       = parseInt("1000.01",priceMultiple);
+        priceMultiple               = 3;
+        price                       = parseInt("1000.010",priceMultiple);
         lastUpdate                  = now;
     }
+    
     
     function getPriceData() view public returns(uint256, uint256, uint8) {
         return (price, lastUpdate, priceMultiple);
@@ -47,6 +67,7 @@ contract EthPriceFeed is usingOraclize {
         price                       = parseInt(result,priceMultiple);
         lastUpdate                  = now;
         LogPriceUpdated(result);
+        dad.setPrice(price, lastUpdate);
         updatePrice();
     }
     
@@ -76,7 +97,7 @@ contract EthPriceFeed is usingOraclize {
     
     function setFundingAddress(address addr) public ownerOnly {
         fundingAddress = addr;
-        dad = Dad(addr);
+        dad = StructuredEther(addr);
     }
     
     function () public payable {
@@ -110,46 +131,3 @@ contract EthPriceFeed is usingOraclize {
     }
 }
 
-///Skeleton function for the deposit to the price feed. 
-contract Dad {
-    address private fundAddress;
-    address private owner;
-    EthPriceFeed ethPrice;
-    
-    event SendFundingToAddress(address addr);
-    
-    modifier ownerOnly() {
-        require(msg.sender == owner || msg.sender == fundAddress);
-        _;
-    }
-    
-    function Dad() public {
-        owner = msg.sender;
-    }
-    
-    function setFundingAddress(address addr) public ownerOnly {
-        fundAddress = addr;
-        ethPrice = EthPriceFeed(addr);
-    }
-    
-    function getBalance() view public returns(uint) {
-        return this.balance / 1 finney;
-    }
-    
-    
-    function deposit() public payable {
-    }
-    
-    ///function to fund the price feed. Can be called only by it of the owner
-    function fundPriceFeed() public ownerOnly {
-        if (this.balance > 101 * 1 finney) {
-            SendFundingToAddress(fundAddress);
-            fundAddress.transfer(101 * 1 finney);
-            ethPrice.startUpdates();
-        }
-    }
-    
-    function kill() public ownerOnly{
-        selfdestruct(owner);
-    }
-}
