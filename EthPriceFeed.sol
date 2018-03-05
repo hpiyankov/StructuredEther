@@ -57,12 +57,17 @@ contract EthPriceFeed is usingOraclize {
         lastUpdate                  = now;
     }
     
-    
+    /// @dev public method for getting the price getPriceData
+    /// @return the price, when it was last updated and the decimal precision
     function getPriceData() view public returns(uint256, uint256, uint8) {
         return (price, lastUpdate, priceMultiple);
     }
     
-    function __callback(bytes32, string result) public {
+    /// @dev Oracalize callback function. After recieveing new price data, calls to update the parent. Then recursevely calls itslef to ensure next update. 
+    /// parseInt is an oracalize string to uint covertor
+    /// @param myId internal to oracalize, ID of the user
+    /// @param result string containing the price data
+    function __callback(bytes32 myId, string result) public {
         if (msg.sender != oraclize_cbAddress()) revert();
         price                       = parseInt(result,priceMultiple);
         lastUpdate                  = now;
@@ -71,42 +76,50 @@ contract EthPriceFeed is usingOraclize {
         updatePrice();
     }
     
+    /// @dev retrieve a query string parameters
+    /// @param id name of the parameter
     function getQuery(bytes24 id) view public returns(string) {
         return query[id];
     }
     
+    /// @dev set a query string parameter
+    /// @param id name of the parameter
+    /// @value value to set
     function setQuery(bytes24 id, string value) public ownerOnly {
         query[id] = value;
     }
     
+    /// @dev retrieve a query int parameter
+    /// @param id name of the parameter
     function getParams(bytes24 id) view public returns(uint) {
         return params[id];
     }
     
+    /// @dev set a query uint parameter
+    /// @param id name of the parameter
+    /// @value value to set
     function setParams(bytes24 id, uint value) public ownerOnly {
         params[id] = value;
     }
     
-    function getBalance() view public returns(uint) {
-        return this.balance / 1 finney;
-    }
-    
-    function getFundingAddress() view public returns(address) {
-        return fundingAddress;
-    }
-    
+    ///@dev connection to the contract which will do the fubding
+    ///@param addr address of the parent funding contract
     function setFundingAddress(address addr) public ownerOnly {
         fundingAddress = addr;
         dad = StructuredEther(addr);
     }
     
+    ///@dev default fallback function for funding
     function () public payable {
     }
     
+    ///@dev force to restart updates. Only doable by owner or funding contract
     function startUpdates() public {
         if (msg.sender == owner || msg.sender == fundingAddress) updatePrice();
     }
     
+    ///@dev main function for the price updates. If there is not enough balance, ask the parent contract for cash. Otherwise shedule an Oracalize call based on the time parameter.
+    /// make sure calls do not run in parallell
     function updatePrice() private {
         ///Make sure we don't start too many parallel calls to Oracalize
         if (now - lastOracalizeCall < (params["frequency"] -20) * 1 seconds) revert();
@@ -120,12 +133,7 @@ contract EthPriceFeed is usingOraclize {
         }
     }
     
-    function withdraw(uint amount) public ownerOnly {
-        uint value = amount * 1 finney;
-        require(value < this.balance);
-        msg.sender.transfer(value);
-    }
-    
+    ///@dev destoy the contract in order to stop the Oracalize calls
     function kill() public ownerOnly{
         selfdestruct(owner);
     }

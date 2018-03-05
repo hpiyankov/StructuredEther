@@ -54,7 +54,7 @@ contract StructuredEther {
         price = 1000000;
         taxPCT = 50;
         IRperiod = 1 years;
-        IRpct = 120;
+        IRpct = 1200;
         IRcollect = 1 minutes;
         fundingAmmount = 101*1 finney;
     }
@@ -84,7 +84,7 @@ contract StructuredEther {
     
     /// @dev Return all the account data for a given address. Owner can invoke it for any address, everyone else only for their own.
     /// @return all the enums of the account. Described at the beginning of the document
-    function getDynamicData(address account) public view returns (uint,uint,uint,uint,uint,uint) {
+    function getDynamicData(address account) public view returns (uint,uint,uint,uint,uint,uint,uint) {
         if(msg.sender != owner) {account=msg.sender;}
         
         return (
@@ -93,7 +93,8 @@ contract StructuredEther {
             accounts[account][uint8(a.stakeBuyBack)],
             accounts[account][uint8(a.stakePrice)],
             price,
-            accounts[owner][uint8(a.ETH)]
+            accounts[owner][uint8(a.ETH)],
+            this.balance
         );
     }
     
@@ -108,7 +109,7 @@ contract StructuredEther {
     }
     
     /// @dev get all the static data which does not change often
-    /// @returns basic calculation information
+    /// @return basic calculation information
     function getStaticData() public view returns(uint,uint,uint,uint) {
         return (
             precision,
@@ -118,11 +119,12 @@ contract StructuredEther {
         );
     }
     
-    /// @dev Function used to modify the price
+    /// @dev Function used to modify the price. Every time when the price is updated, attempt to collect interest.
     /// @param newPrice ETH/USD price expected with same precision as the precision parameter
     function setPrice(uint newPrice, uint updateTime) public ownerOnly {
         price = newPrice;
         lastPriceDate = updateTime;
+        collectAccountInterest(owner);
     }
     
     /// @dev Sell your ether and buy Structured ether. Taxes are collected based on the stake amount. All taxes are trasnfered to the owners account and accessable for further funding.
@@ -222,20 +224,15 @@ contract StructuredEther {
     /// @dev function to fund the price feed. Can be called only by it of the owner. This is needed in order to recieve fresh data.
     function fundPriceFeed() public ownerOnly {
         if (accounts[owner][uint8(a.ETH)] > fundingAmmount) {
+            accounts[owner][uint8(a.ETH)].sub(fundingAmmount);
             fundAddress.transfer(fundingAmmount);
             ethPrice.startUpdates();
-            accounts[owner][uint8(a.ETH)].sub(fundingAmmount);
         }
     }
     
     /// @dev Neeed while still testing to be removed in the final version
     function kill() public ownerOnly{
         selfdestruct(owner);
-    }
-    
-    /// @dev Neeed while still testing to be removed in the final version
-    function getBalance() public view ownerOnly returns(uint) {
-        return this.balance;
     }
 }
 
