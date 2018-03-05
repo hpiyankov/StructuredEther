@@ -83,15 +83,35 @@ contract StructuredEther {
     
     /// @dev Return all the account data for a given address. Owner can invoke it for any address, everyone else only for their own.
     /// @return all the enums of the account. Described at the beginning of the document
-    function getAccountData(address account) public view returns (uint,uint,uint,uint,uint,uint) {
+    function getDynamicData(address account) public view returns (uint,uint,uint,uint,uint,uint) {
         if(msg.sender != owner) {account=msg.sender;}
+        
         return (
             accounts[account][uint8(a.ETH)],
             accounts[account][uint8(a.SE)],
-            accounts[account][uint8(a.stakedETH)],
             accounts[account][uint8(a.stakeBuyBack)],
             accounts[account][uint8(a.stakePrice)],
-            accounts[account][uint8(a.lastIRdate)]
+            price,
+            accounts[owner][uint8(a.ETH)]
+        );
+    }
+    
+    // @dev this needs to be in a seeprate function otherwise the compiler retursn Stack Too Deep
+    // @return the staked ether minus the expected interest rate on it
+    function getStakedETH(address account) public view returns(uint) {
+        if(msg.sender != owner) {account=msg.sender;}
+        
+        uint lastIRdate =  accounts[account][uint8(a.lastIRdate)];
+        uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
+        return accounts[account][uint8(a.stakedETH)].sub(interest);
+    }
+    
+    function getStaticData() public view returns(uint,uint,uint,uint) {
+        return (
+            precision,
+            IRperiod,
+            IRpct,
+            IRcollect
         );
     }
     
@@ -114,19 +134,23 @@ contract StructuredEther {
         uint tax = brutStake.mul(taxPCT).div(10**precision);
         uint netStake = brutStake.sub(tax);
         
-        uint stakedETH = accounts[msg.sender][uint8(a.stakedETH)];
-        uint stakeBuyBack = accounts[msg.sender][uint8(a.stakeBuyBack)];
-        uint stakePrice = accounts[msg.sender][uint8(a.stakePrice)];
-    
-        accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].sub(brutStake);
+        accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].sub(brutStake.add(netBuy));
         accounts[msg.sender][uint8(a.SE)] = accounts[msg.sender][uint8(a.SE)].add(netStake.add(netBuy).mul(price).div(1 ether));
         
-        accounts[msg.sender][uint8(a.stakedETH)] = stakedETH.add(netStake);
-        accounts[msg.sender][uint8(a.stakeBuyBack)] = stakeBuyBack.add(netStake.mul(price).div(1 ether));
-        accounts[msg.sender][uint8(a.stakePrice)] = ((stakedETH.mul(stakePrice)).add(netStake.mul(price))).div(stakedETH.add(netStake));
+        accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(netBuy);
         
-        accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(tax);
-        accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].add(netStake);
+        if (stake > 0) {
+            uint stakedETH = accounts[msg.sender][uint8(a.stakedETH)];
+            uint stakeBuyBack = accounts[msg.sender][uint8(a.stakeBuyBack)];
+            uint stakePrice = accounts[msg.sender][uint8(a.stakePrice)];
+            
+            accounts[msg.sender][uint8(a.stakedETH)] = stakedETH.add(netStake);
+            accounts[msg.sender][uint8(a.stakeBuyBack)] = stakeBuyBack.add(netStake.mul(price).div(1 ether));
+            accounts[msg.sender][uint8(a.stakePrice)] = ((stakedETH.mul(stakePrice)).add(netStake.mul(price))).div(stakedETH.add(netStake));
+            
+            accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(tax);
+            accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].add(netStake);
+        }
     }
     
     /// @dev Sell your structured Ether and buy Ether as the current rate.
@@ -151,8 +175,8 @@ contract StructuredEther {
         accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].add(amount);
     }
     
-    /// @Dev function to withdraw ethers from the contract. You can only withdraw ether , not stakedETH and not Structured ether
-    /// @params amount - how much ether to withdraw
+    /// @dev function to withdraw ethers from the contract. You can only withdraw ether , not stakedETH and not Structured ether
+    /// @param amount - how much ether to withdraw
     function withdrawEther(uint amount) public {
          uint tax = amount.mul(taxPCT).div(10**precision);
          accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].sub(amount);

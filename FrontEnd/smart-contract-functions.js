@@ -79,12 +79,16 @@ function fetchAccountBalance() {
         contract.getAccountData(defaultAccount, (err2,res2) => {
           if (!err2) {
 						output = res2;
-						availableEther = web3.fromWei(res2[0], 'ether');
-            document.getElementById('ETH').innerHTML = web3.fromWei(res2[0], 'ether');
-						document.getElementById('SE').innerHTML = (res2[1])/(1000);
-						document.getElementById('stakedETH').innerHTML = web3.fromWei(res2[2], 'ether');
-						document.getElementById('stakedBuyback').innerHTML = res2[3]/(1000);
-						document.getElementById('stakedPrice').innerHTML = res2[4]/(1000);
+						availableEther = Math.floor(web3.fromWei(res2[0], 'ether')*1000)/1000;
+						stakedEther = Math.floor(web3.fromWei(res2[2], 'ether')*1000)/1000;
+						structuredEther = (res2[1])/(1000);
+						stakedPrice = res2[4]/(1000);
+						stakedBuyBack = res2[3]/(1000);
+            document.getElementById('ETH').innerHTML = availableEther;
+						document.getElementById('SE').innerHTML = structuredEther;
+						document.getElementById('stakedETH').innerHTML = stakedEther;
+						document.getElementById('stakedBuyback').innerHTML = stakedBuyBack;
+						document.getElementById('stakedPrice').innerHTML = stakedPrice;
 						document.getElementById('IR').innerHTML = "HC 12% per 1 year";
           } else {
             output = "Error2";
@@ -108,23 +112,27 @@ function changedSelection(val) {
 				case "Deposit Ether":
 					bottomButton(1,"Deposit");
 					singleSlider(0,metaMaskEther*1000,"min-range");
-					mainHeading("Amount of Ether to deposit in 0.001 (1000 = 1 ether)");
+					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to deposit.");
 				break;
 				case "Sell/Stake Ether":
 					bottomButton(1,"Stake");
 					singleSlider(0,availableEther*1000,"range");
-					mainHeading("Amount of Ether to sell in 0.001 (1000 = 1 ether) and what part of it to stake instead (subject to 5% fee).");
+					mainHeading("Total amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to sell and what part of it to <span class='tooltip'>stake instead<span class='tooltiptext'>Exmple: You want to sell 0.5 Ether = 500 Finney. If you select 0-500 (stake amount - buy amount) on the slider below, you will recieve (0.5 * ETH/USD Price) in Structured Ether. You can later buy back ETH at the current price for your Structured Ether. If you select 250-500 instead, you will still recieve (0.5 * ETH/USD Price , minus 5% tax) in Structured Ether but half of it (250/500 = 50%) would be in a form of a loan, you will also have 0.250 staked Ether. You can later recieve your staked Ether (minus interest rate) at the exact same price which you paid for it (regardless of the curent market price). In the meantime you can use your Structured Ether to freely buy more ether, which you can stake again.</span></span>.");
 				break;
 				case "Redeem Stake":
+					singleSlider(0,Math.floor(Math.min(stakedEther*1000,stakedBuyBack)),"min-range");
 					bottomButton(1,"Redeem");
+					mainHeading("<span class='tooltip'>Redeem<span class='tooltiptext'>You can redeem your staked ether (minus interest rate) at the exact same price which you paid for it.</span></span> Stake. Maximum amount to reddem is based on your Sraked Ether and Structured Ether available.");
 				break;
 				case "Buy Ether":
-				bottomButton(1,"Buy");
+					singleSlider(0,Math.floor(structuredEther/price*1000),"min-range");
+					bottomButton(1,"Buy");
+					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to buy at the <span class='tooltip'>current market price<span class='tooltiptext'>Please note that the price is a live feed and it might change between the point of issuing the order and executing the transation. If you want to be sure your order is filled, always make the order less then your total amount of available structured Ether.</span></span>.");
 				break;
 				case "Withdraw Ether":
 					bottomButton(1,"Withdraw");
 					singleSlider(0,availableEther*1000,"min-range");
-					mainHeading("Amount of Ether to withdraw (subject to 5% fee) in 0.001 (1000 = 1 ether).");
+					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to withdraw (subject to 5% fee).");
 				break;
 				default:
 					bottomButton(0,"");
@@ -189,6 +197,34 @@ function changedSelection(val) {
     })
 	}
 
+	function RedeemGoButton() {
+		var obj = $("#slider").data("roundSlider");
+		var val = obj.option("value");
+		let contract = web3.eth.contract(contractABI).at(contractAddress);
+
+    contract.redeemStake(web3.toWei(val, 'finney'), (err,res) => {
+      if (!err) {
+				alert("Transaction submitted succesfully. Transaction hash: "+ res);
+      } else {
+        alert("Error sending the transaction!");
+      }
+    })
+	}
+
+	function BuyGoButton() {
+		var obj = $("#slider").data("roundSlider");
+		var val = obj.option("value");
+		let contract = web3.eth.contract(contractABI).at(contractAddress);
+
+    contract.buyEther(web3.toWei(val, 'finney'), (err,res) => {
+      if (!err) {
+				alert("Transaction submitted succesfully. Transaction hash: "+ res);
+      } else {
+        alert("Error sending the transaction!");
+      }
+    })
+	}
+
 function mainHeading(header) {
 	document.getElementById('mainHeader').innerHTML = header;
 }
@@ -216,6 +252,10 @@ function clearSlider() {
 
 var metaMaskEther = 0;
 var availableEther = 0;
+var stakedEther = 0;
+var structuredEther = 0;
+var stakedPrice = 0;
+var price = 1000;
 const contractAddress = "0x87486149fdfacdc871d96a281978b8fb77f9b630";
 const contractABI = [
 	{
