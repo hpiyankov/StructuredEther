@@ -47,7 +47,7 @@ contract EthPriceFeed is usingOraclize {
         owner = msg.sender;
         
         params["frequency"]         = 60;
-        params["cutoff"]            = 100;
+        params["cutoff"]            = 50;
         
         query["query"]              = "json(https://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd";
         query["type"]               = "URL";
@@ -68,7 +68,7 @@ contract EthPriceFeed is usingOraclize {
     /// @param myId internal to oracalize, ID of the user
     /// @param result string containing the price data
     function __callback(bytes32 myId, string result) public {
-        if (msg.sender != oraclize_cbAddress()) revert();
+        ///if (msg.sender != oraclize_cbAddress()) revert();
         price                       = parseInt(result,priceMultiple);
         lastUpdate                  = now;
         LogPriceUpdated(result);
@@ -84,7 +84,7 @@ contract EthPriceFeed is usingOraclize {
     
     /// @dev set a query string parameter
     /// @param id name of the parameter
-    /// @value value to set
+    /// @param value value to set
     function setQuery(bytes24 id, string value) public ownerOnly {
         query[id] = value;
     }
@@ -97,7 +97,7 @@ contract EthPriceFeed is usingOraclize {
     
     /// @dev set a query uint parameter
     /// @param id name of the parameter
-    /// @value value to set
+    /// @param value value to set
     function setParams(bytes24 id, uint value) public ownerOnly {
         params[id] = value;
     }

@@ -54,7 +54,7 @@ contract StructuredEther {
         price = 1000000;
         taxPCT = 50;
         IRperiod = 1 years;
-        IRpct = 1200;
+        IRpct = 1200000;
         IRcollect = 1 minutes;
         fundingAmmount = 101*1 finney;
     }
@@ -105,7 +105,8 @@ contract StructuredEther {
         
         uint lastIRdate =  accounts[account][uint8(a.lastIRdate)];
         uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
-        return accounts[account][uint8(a.stakedETH)].sub(interest);
+        uint staked = accounts[account][uint8(a.stakedETH)].sub(interest);
+        return staked;
     }
     
     /// @dev get all the static data which does not change often
@@ -125,6 +126,12 @@ contract StructuredEther {
         price = newPrice;
         lastPriceDate = updateTime;
         collectAccountInterest(owner);
+    }
+    
+    /// @dev allow the owner to configure the IRpct
+    /// @param _IR new interest rate
+    function setIR(uint _IR) public ownerOnly {
+        IRpct = _IR;
     }
     
     /// @dev Sell your ether and buy Structured ether. Taxes are collected based on the stake amount. All taxes are trasnfered to the owners account and accessable for further funding.
@@ -176,6 +183,7 @@ contract StructuredEther {
         
         uint SEAmount = amount.mul(accounts[msg.sender][uint8(a.stakePrice)]).div(1 ether);
         accounts[msg.sender][uint8(a.SE)] = accounts[msg.sender][uint8(a.SE)].sub(SEAmount);
+        accounts[msg.sender][uint8(a.stakeBuyBack)] = accounts[msg.sender][uint8(a.stakeBuyBack)].sub(SEAmount);
         accounts[msg.sender][uint8(a.stakedETH)] = accounts[msg.sender][uint8(a.stakedETH)].sub(amount);
         accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].sub(amount);
         accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].add(amount);
@@ -224,7 +232,7 @@ contract StructuredEther {
     /// @dev function to fund the price feed. Can be called only by it of the owner. This is needed in order to recieve fresh data.
     function fundPriceFeed() public ownerOnly {
         if (accounts[owner][uint8(a.ETH)] > fundingAmmount) {
-            accounts[owner][uint8(a.ETH)].sub(fundingAmmount);
+            accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].sub(fundingAmmount);
             fundAddress.transfer(fundingAmmount);
             ethPrice.startUpdates();
         }

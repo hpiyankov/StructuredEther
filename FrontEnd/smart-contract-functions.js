@@ -65,7 +65,8 @@ function showGetBalance() {
 }
 
 function showContractData() {
-    document.getElementById('contractAddress').innerHTML = "<b>"+contractAddress+"</b>";
+		document.getElementById('contractAddress').innerHTML = "<b>"+contractAddress+"</b>";
+		document.getElementById('priceFeed').innerHTML = "<b>"+priceFeedAddress+"</b>";
 }
 
 function fetchStaticData() {
@@ -101,7 +102,7 @@ function fetchAccountBalance() {
 						price = res2[4]/(precision);
 						available = Math.floor(web3.fromWei(res2[5], 'ether')*precision)/precision;
 						liquidity = Math.floor(web3.fromWei(res2[6], 'ether')*precision)/precision;
-
+					
             document.getElementById('ETH').innerHTML = availableEther;
 						document.getElementById('SE').innerHTML = structuredEther;
 						document.getElementById('stakedBuyback').innerHTML = stakedBuyBack;
@@ -116,6 +117,7 @@ function fetchAccountBalance() {
 				contract.getStakedETH(defaultAccount, (err3,res3) => {
           if (!err3) {
 						stakedEther = Math.floor(web3.fromWei(res3, 'ether')*precision)/precision;
+						console.log(res3);
 						document.getElementById('stakedETH').innerHTML = stakedEther;
           } else {
             alert("Error getting balances");
@@ -138,16 +140,16 @@ function changedSelection(val) {
 				break;
 				case "Deposit Ether":
 					bottomButton(1,"Deposit");
-					singleSlider(0,metaMaskEther*1000,"min-range");
+					singleSlider(0,Math.floor(metaMaskEther*1000),"min-range");
 					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to deposit.");
 				break;
 				case "Sell/Stake Ether":
 					bottomButton(1,"Stake");
-					singleSlider(0,availableEther*1000,"range");
+					singleSlider(0,Math.floor(availableEther*1000),"range");
 					mainHeading("Total amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to sell and what part of it to <span class='tooltip'>stake instead<span class='tooltiptext'>Exmple: You want to sell 0.5 Ether = 500 Finney. If you select 0-500 (stake amount - buy amount) on the slider below, you will recieve (0.5 * ETH/USD Price) in Structured Ether. You can later buy back ETH at the current price for your Structured Ether. If you select 250-500 instead, you will still recieve (0.5 * ETH/USD Price , minus 5% tax) in Structured Ether but half of it (250/500 = 50%) would be in a form of a loan, you will also have 0.250 staked Ether. You can later recieve your staked Ether (minus interest rate) at the exact same price which you paid for it (regardless of the curent market price). In the meantime you can use your Structured Ether to freely buy more ether, which you can stake again.</span></span>.");
 				break;
 				case "Redeem Stake":
-					singleSlider(0,Math.floor(Math.min(stakedEther*1000,stakedBuyBack)),"min-range");
+					singleSlider(0,Math.floor(Math.min(stakedEther*1000,Math.floor(structuredEther/stakedPrice*precision))),"min-range");
 					bottomButton(1,"Redeem");
 					mainHeading("<span class='tooltip'>Redeem<span class='tooltiptext'>You can redeem your staked ether (minus interest rate) at the exact same price which you paid for it.</span></span> Stake. Maximum amount to reddem is based on your Sraked Ether and Structured Ether available.");
 				break;
@@ -158,7 +160,7 @@ function changedSelection(val) {
 				break;
 				case "Withdraw Ether":
 					bottomButton(1,"Withdraw");
-					singleSlider(0,availableEther*1000,"min-range");
+					singleSlider(0,Math.floor(availableEther*1000),"min-range");
 					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to withdraw (subject to 5% fee).");
 				break;
 				default:
@@ -289,13 +291,40 @@ var IRperiod =0;
 var IRpct =0;
 var IRcollect = 0;
 var liquidity = 0;
-const contractAddress = "0xb997d7d2eb40219aa724602508669ea89cc7af7f";
+const contractAddress = "0xd76ac803e27b1d38fbc5156ce39663f494a4c8eb";
+const priceFeedAddress = "0x91a142d3f5e98080f26f42d14154927399f46d3c";
 const contractABI = [
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "redeemStake",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
 	{
 		"constant": true,
 		"inputs": [],
-		"name": "getBalance",
+		"name": "getStaticData",
 		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"name": "",
+				"type": "uint256"
+			},
 			{
 				"name": "",
 				"type": "uint256"
@@ -303,6 +332,66 @@ const contractABI = [
 		],
 		"payable": false,
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "fundPriceFeed",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawEther",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "kill",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			}
+		],
+		"name": "setFundingAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "collectAccountInterest",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -338,10 +427,60 @@ const contractABI = [
 			{
 				"name": "",
 				"type": "uint256"
+			},
+			{
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"payable": false,
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_IR",
+				"type": "uint256"
+			}
+		],
+		"name": "setIR",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"name": "stake",
+				"type": "uint256"
+			}
+		],
+		"name": "sellEther",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "buyEther",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -364,92 +503,6 @@ const contractABI = [
 		"type": "function"
 	},
 	{
-		"constant": true,
-		"inputs": [],
-		"name": "getStaticData",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "kill",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "buyEther",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "collectAccountInterest",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "fundPriceFeed",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawEther",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"constant": false,
 		"inputs": [
 			{
@@ -468,61 +521,15 @@ const contractABI = [
 		"type": "function"
 	},
 	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "addr",
-				"type": "address"
-			}
-		],
-		"name": "setFundingAddress",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
 	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"name": "stake",
-				"type": "uint256"
-			}
-		],
-		"name": "sellEther",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"payable": true,
 		"stateMutability": "payable",
 		"type": "fallback"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "redeemStake",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
 	}
 ];
 
