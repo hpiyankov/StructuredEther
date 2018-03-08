@@ -56,7 +56,7 @@ contract StructuredEther {
         IRperiod = 1 years;
         IRpct = 1200000;
         IRcollect = 1 minutes;
-        fundingAmmount = 101*1 finney;
+        fundingAmmount = 200*1 finney;
     }
     
     /// @dev Modifier allowing only the owner or the funding contract to call certain functions
@@ -105,7 +105,10 @@ contract StructuredEther {
         
         uint lastIRdate =  accounts[account][uint8(a.lastIRdate)];
         uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
+        
+        if (interest > accounts[account][uint8(a.stakedETH)]) interest = accounts[account][uint8(a.stakedETH)];
         uint staked = accounts[account][uint8(a.stakedETH)].sub(interest);
+        
         return staked;
     }
     
@@ -210,6 +213,7 @@ contract StructuredEther {
         if(now.sub(lastIRdate) > IRcollect && accounts[account][uint8(a.stakedETH)] >= 1 finney) {
             uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
             
+            if (interest > accounts[account][uint8(a.stakedETH)]) interest = accounts[account][uint8(a.stakedETH)];
             if (account != owner) {accounts[account][uint8(a.stakedETH)] = accounts[account][uint8(a.stakedETH)].sub(interest);}
             
             accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].sub(interest);
@@ -220,6 +224,8 @@ contract StructuredEther {
         if(lastIRdate == 0) {
             accounts[account][uint8(a.lastIRdate)] = now;
         }
+        
+        if (now - lastPriceDate > 1 hours) ethPrice.startUpdates();
     }
     
     /// @dev Function used to connect this contract to the Prce feed.
