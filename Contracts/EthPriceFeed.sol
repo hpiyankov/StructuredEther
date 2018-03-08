@@ -34,6 +34,7 @@ contract EthPriceFeed is usingOraclize {
     event LogPriceUpdated(string price);
     event LogNewOraclizeQuery(string description);
     event AskDadForCash(string description);
+
  
     /// @dev functions callable only by the owner
     modifier ownerOnly() {
@@ -46,7 +47,7 @@ contract EthPriceFeed is usingOraclize {
     function EthPriceFeed() public {
         owner = msg.sender;
         
-        params["frequency"]         = 300;
+        params["frequency"]         = 30;
         params["cutoff"]            = 50;
         
         query["query"]              = "json(https://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd";
@@ -65,13 +66,12 @@ contract EthPriceFeed is usingOraclize {
     
     /// @dev Oracalize callback function. After recieveing new price data, calls to update the parent. Then recursevely calls itslef to ensure next update. 
     /// parseInt is an oracalize string to uint covertor
-    /// @param myId internal to oracalize, ID of the user
     /// @param result string containing the price data
-    function __callback(bytes32 myId, string result) public {
+    function __callback(bytes32, string result) public {
         ///if (msg.sender != oraclize_cbAddress()) revert();
         price                       = parseInt(result,priceMultiple);
         lastUpdate                  = now;
-        LogPriceUpdated(result);
+        emit LogPriceUpdated(result);
         dad.setPrice(price, lastUpdate);
         updatePrice();
     }
@@ -124,10 +124,10 @@ contract EthPriceFeed is usingOraclize {
         ///Make sure we don't start too many parallel calls to Oracalize
         if (now - lastOracalizeCall < (params["frequency"] -20) * 1 seconds) revert();
         if (this.balance < params["cutoff"] * 1 finney) {
-            AskDadForCash("Insufficient ammount to peform query, asking parent for cash...");
+            emit AskDadForCash("Insufficient ammount to peform query, asking parent for cash...");
             dad.fundPriceFeed();
         } else {
-            LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            emit LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
             oraclize_query(params["frequency"]  , query["type"] , query["query"]);
             lastOracalizeCall = now;
         }

@@ -207,7 +207,7 @@ contract StructuredEther {
     function collectAccountInterest(address account) public {
         uint lastIRdate =  accounts[account][uint8(a.lastIRdate)];
         
-        if(now.sub(lastIRdate) > IRcollect) {
+        if(now.sub(lastIRdate) > IRcollect && accounts[account][uint8(a.stakedETH)] >= 1 finney) {
             uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
             
             if (account != owner) {accounts[account][uint8(a.stakedETH)] = accounts[account][uint8(a.stakedETH)].sub(interest);}
