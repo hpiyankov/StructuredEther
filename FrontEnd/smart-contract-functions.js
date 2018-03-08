@@ -140,27 +140,27 @@ function changedSelection(val) {
 				break;
 				case "Deposit Ether":
 					bottomButton(1,"Deposit");
-					singleSlider(0,Math.floor(metaMaskEther*1000),"min-range");
+					singleSlider(0,Math.floor(metaMaskEther*precision),"min-range");
 					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to deposit.");
 				break;
 				case "Sell/Stake Ether":
 					bottomButton(1,"Stake");
-					singleSlider(0,Math.floor(availableEther*1000),"range");
+					singleSlider(0,Math.floor(availableEther*precision),"range");
 					mainHeading("Total amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to sell and what part of it to <span class='tooltip'>stake instead<span class='tooltiptext'>Exmple: You want to sell 0.5 Ether = 500 Finney. If you select 0-500 (stake amount - buy amount) on the slider below, you will recieve (0.5 * ETH/USD Price) in Structured Ether. You can later buy back ETH at the current price for your Structured Ether. If you select 250-500 instead, you will still recieve (0.5 * ETH/USD Price , minus 5% tax) in Structured Ether but half of it (250/500 = 50%) would be in a form of a loan, you will also have 0.250 staked Ether. You can later recieve your staked Ether (minus interest rate) at the exact same price which you paid for it (regardless of the curent market price). In the meantime you can use your Structured Ether to freely buy more ether, which you can stake again.</span></span>.");
 				break;
 				case "Redeem Stake":
-					singleSlider(0,Math.floor(Math.min(stakedEther*1000,Math.floor(structuredEther/stakedPrice*precision))),"min-range");
+					singleSlider(0,Math.floor(Math.min(stakedEther*precision,Math.floor(structuredEther/stakedPrice*precision))),"min-range");
 					bottomButton(1,"Redeem");
 					mainHeading("<span class='tooltip'>Redeem<span class='tooltiptext'>You can redeem your staked ether (minus interest rate) at the exact same price which you paid for it.</span></span> Stake. Maximum amount to reddem is based on your Sraked Ether and Structured Ether available.");
 				break;
 				case "Buy Ether":
-					singleSlider(0,Math.floor(structuredEther/price*1000),"min-range");
+					singleSlider(0,Math.min(Math.floor(structuredEther/price*precision),available*precision),"min-range");
 					bottomButton(1,"Buy");
 					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to buy at the <span class='tooltip'>current market price<span class='tooltiptext'>Please note that the price is a live feed and it might change between the point of issuing the order and executing the transation. If you want to be sure your order is filled, always make the order less then your total amount of available structured Ether.</span></span>.");
 				break;
 				case "Withdraw Ether":
 					bottomButton(1,"Withdraw");
-					singleSlider(0,Math.floor(availableEther*1000),"min-range");
+					singleSlider(0,Math.floor(availableEther*precision),"min-range");
 					mainHeading("Amount of <span class='tooltip'>Finney<span class='tooltiptext'>Finney is a standard measure for Ether. 1000 finney = 1 ether</span></span> to withdraw (subject to 5% fee).");
 				break;
 				default:
@@ -291,8 +291,8 @@ var IRperiod =0;
 var IRpct =0;
 var IRcollect = 0;
 var liquidity = 0;
-const contractAddress = "0x665ee07beb87de107f1f7b2181694b6cd82ac514";
-const priceFeedAddress = "0xa371374e785219c2a2a06d8891fb0514d8750a0b";
+const contractAddress = "0xb8d5876b07d63ee89813b5409e61bf959e4680f5";
+const priceFeedAddress = "0xd96a45be07fe55f75fa054945928bb391613f358";
 const contractABI = [
 	{
 		"constant": false,

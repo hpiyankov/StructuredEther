@@ -87,13 +87,18 @@ contract StructuredEther {
     function getDynamicData(address account) public view returns (uint,uint,uint,uint,uint,uint,uint) {
         if(msg.sender != owner) {account=msg.sender;}
         
+        uint available = 0;
+        if(accounts[owner][uint8(a.ETH)] > fundingAmmount) {
+          available = accounts[owner][uint8(a.ETH)].sub(fundingAmmount);  
+        }
+        
         return (
             accounts[account][uint8(a.ETH)],
             accounts[account][uint8(a.SE)],
             accounts[account][uint8(a.stakeBuyBack)],
             accounts[account][uint8(a.stakePrice)],
             price,
-            accounts[owner][uint8(a.ETH)],
+            available,
             this.balance
         );
     }
@@ -106,7 +111,7 @@ contract StructuredEther {
         uint lastIRdate =  accounts[account][uint8(a.lastIRdate)];
         uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
         
-        if (interest > accounts[account][uint8(a.stakedETH)]) interest = accounts[account][uint8(a.stakedETH)];
+        if (interest > accounts[account][uint8(a.stakedETH)]) {interest = accounts[account][uint8(a.stakedETH)];}
         uint staked = accounts[account][uint8(a.stakedETH)].sub(interest);
         
         return staked;
@@ -128,7 +133,6 @@ contract StructuredEther {
     function setPrice(uint newPrice, uint updateTime) public ownerOnly {
         price = newPrice;
         lastPriceDate = updateTime;
-        collectAccountInterest(owner);
     }
     
     /// @dev allow the owner to configure the IRpct
@@ -156,6 +160,8 @@ contract StructuredEther {
         accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(netBuy);
         
         if (stake > 0) {
+            collectAccountInterest(msg.sender);
+            
             uint stakedETH = accounts[msg.sender][uint8(a.stakedETH)];
             uint stakeBuyBack = accounts[msg.sender][uint8(a.stakeBuyBack)];
             uint stakePrice = accounts[msg.sender][uint8(a.stakePrice)];
@@ -165,7 +171,6 @@ contract StructuredEther {
             accounts[msg.sender][uint8(a.stakePrice)] = ((stakedETH.mul(stakePrice)).add(netStake.mul(price))).div(stakedETH.add(netStake));
             
             accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(tax);
-            accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].add(netStake);
         }
     }
     
@@ -188,45 +193,42 @@ contract StructuredEther {
         accounts[msg.sender][uint8(a.SE)] = accounts[msg.sender][uint8(a.SE)].sub(SEAmount);
         accounts[msg.sender][uint8(a.stakeBuyBack)] = accounts[msg.sender][uint8(a.stakeBuyBack)].sub(SEAmount);
         accounts[msg.sender][uint8(a.stakedETH)] = accounts[msg.sender][uint8(a.stakedETH)].sub(amount);
-        accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].sub(amount);
         accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].add(amount);
     }
     
     /// @dev function to withdraw ethers from the contract. You can only withdraw ether , not stakedETH and not Structured ether
     /// @param amount - how much ether to withdraw
     function withdrawEther(uint amount) public {
-         uint tax = amount.mul(taxPCT).div(10**precision);
-         accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].sub(amount);
-         accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(tax);
-         msg.sender.transfer(amount.sub(tax));
+        collectAccountInterest(msg.sender);
+        
+        uint tax = amount.mul(taxPCT).div(10**precision);
+        accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].sub(amount);
+        accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(tax);
+        msg.sender.transfer(amount.sub(tax));
     }
     
-    /// @dev Collects interest. Works for both inidividual accounts and the owner account. Practially this is the same process.
-    /// Collecting interest on the owners account is an asynchronious representation of collecting interes on the inidividual accounts.
+    /// @dev Collects interest. Works for both inidividual accounts 
     /// Collecting interest for individual accounts happens only on payable events. This is done in order to avoid excessive fees for writing on a lof of accounts on regular basis.
-    /// As the owner account always holds a "copy" of all the stakedETH , the owner account can collect interest without going through every account, simply by trasnfering from the stakedETH pile to the ETH pile.
-    /// Later when the individual account calls a payab;e function, it's balance would "catch up" to the interest collection.
     /// @param account - the account to collect interest for.
     function collectAccountInterest(address account) public {
         uint lastIRdate =  accounts[account][uint8(a.lastIRdate)];
         
-        if(now.sub(lastIRdate) > IRcollect && accounts[account][uint8(a.stakedETH)] >= 1 finney) {
+        if(now.sub(lastIRdate) > IRcollect && accounts[account][uint8(a.stakedETH)] > 0) {
             uint interest =  accounts[account][uint8(a.stakedETH)].mul(now.sub(lastIRdate)).mul(IRpct).div(IRperiod).div(10**precision);
+            if (interest > accounts[account][uint8(a.stakedETH)]) {interest = accounts[account][uint8(a.stakedETH)];}
             
-            if (interest > accounts[account][uint8(a.stakedETH)]) interest = accounts[account][uint8(a.stakedETH)];
-            if (account != owner) {accounts[account][uint8(a.stakedETH)] = accounts[account][uint8(a.stakedETH)].sub(interest);}
-            
-            accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].sub(interest);
+            accounts[account][uint8(a.stakedETH)] = accounts[account][uint8(a.stakedETH)].sub(interest);
             accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(interest);
             accounts[account][uint8(a.lastIRdate)] = now;
         }
         
-        if(lastIRdate == 0) {
-            accounts[account][uint8(a.lastIRdate)] = now;
+        if(lastIRdate == 0) {accounts[account][uint8(a.lastIRdate)] = now;}
+        if (now.sub(lastPriceDate) > 1 hours) {
+            lastPriceDate = now;
+            ethPrice.startUpdates();
         }
-        
-        if (now - lastPriceDate > 1 hours) ethPrice.startUpdates();
     }
+
     
     /// @dev Function used to connect this contract to the Prce feed.
     /// @param addr - the address of the price feed
