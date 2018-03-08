@@ -37,7 +37,7 @@ contract EthPriceFeed is usingOraclize {
  
     /// @dev functions callable only by the owner
     modifier ownerOnly() {
-        require(msg.sender == owner);
+        require(msg.sender == owner || msg.sender == fundingAddress);
         _;
     }
     
@@ -46,7 +46,7 @@ contract EthPriceFeed is usingOraclize {
     function EthPriceFeed() public {
         owner = msg.sender;
         
-        params["frequency"]         = 60;
+        params["frequency"]         = 300;
         params["cutoff"]            = 50;
         
         query["query"]              = "json(https://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd";
@@ -114,8 +114,8 @@ contract EthPriceFeed is usingOraclize {
     }
     
     ///@dev force to restart updates. Only doable by owner or funding contract
-    function startUpdates() public {
-        if (msg.sender == owner || msg.sender == fundingAddress) updatePrice();
+    function startUpdates() public ownerOnly {
+        updatePrice();
     }
     
     ///@dev main function for the price updates. If there is not enough balance, ask the parent contract for cash. Otherwise shedule an Oracalize call based on the time parameter.

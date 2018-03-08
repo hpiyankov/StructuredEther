@@ -292,7 +292,7 @@ var IRpct =0;
 var IRcollect = 0;
 var liquidity = 0;
 const contractAddress = "0xd76ac803e27b1d38fbc5156ce39663f494a4c8eb";
-const priceFeedAddress = "0x91a142d3f5e98080f26f42d14154927399f46d3c";
+const priceFeedAddress = "0x27a61194de7ee90cbd9e01c266d93ce839a55011";
 const contractABI = [
 	{
 		"constant": false,
