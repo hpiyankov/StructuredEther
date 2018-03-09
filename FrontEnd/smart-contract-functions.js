@@ -291,7 +291,7 @@ var IRperiod =0;
 var IRpct =0;
 var IRcollect = 0;
 var liquidity = 0;
-const contractAddress = "0xb8d5876b07d63ee89813b5409e61bf959e4680f5";
+const contractAddress = "0x730724f27a4207575368b2d4559fd2d85c4f92eb";
 const priceFeedAddress = "0xd96a45be07fe55f75fa054945928bb391613f358";
 const contractABI = [
 	{
