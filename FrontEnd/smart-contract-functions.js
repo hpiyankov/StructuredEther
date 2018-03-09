@@ -50,7 +50,7 @@ function showGetBalance() {
           var defaultAccount = web3.eth.defaultAccount;
           web3.eth.getBalance(defaultAccount, (err2, res2) => {
             if (!err2) {
-							document.getElementById('userAddress').innerHTML = defaultAccount;
+							document.getElementById('userAddress').innerHTML = "<a href='https://rinkeby.etherscan.io/address/"+defaultAccount+"'><b>"+defaultAccount+"</b></a>";
 							document.getElementById('balance').innerHTML = web3.fromWei(res2, 'ether');
 							metaMaskEther = web3.fromWei(res2, 'ether');
             } else {
@@ -65,8 +65,8 @@ function showGetBalance() {
 }
 
 function showContractData() {
-		document.getElementById('contractAddress').innerHTML = "<b>"+contractAddress+"</b>";
-		document.getElementById('priceFeed').innerHTML = "<b>"+priceFeedAddress+"</b>";
+		document.getElementById('contractAddress').innerHTML = "<a href='https://rinkeby.etherscan.io/address/"+contractAddress+"'><b>"+contractAddress+"</b></a>";
+		document.getElementById('priceFeed').innerHTML = "<a href='https://rinkeby.etherscan.io/address/"+priceFeedAddress+"'><b>"+priceFeedAddress+"</b></a>";
 }
 
 function fetchStaticData() {
