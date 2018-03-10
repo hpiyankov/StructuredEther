@@ -91,7 +91,7 @@ contract StructuredEther {
     function collectInterest(address account) internal {
         require (account != owner);
         
-        uint interest =  calcIR(account,now);
+        uint interest = calcIR(account,now);
         uint globalInterest = calcIR(owner, now,accounts[owner][uint8(a.interimIRdate)]);
     
         accounts[account][uint8(a.stakedETH)] = accounts[account][uint8(a.stakedETH)].sub(interest);
@@ -104,7 +104,7 @@ contract StructuredEther {
     }
     
     /// @dev Fallback fundtion used for depositing funds. Upon calling will add the deposited ETH to the account's balance.
-    function () public payable triggersUpdates{
+    function() public payable triggersUpdates {
         accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].add(msg.value);
         accounts[owner][uint8(a.totalOthersEther)] = accounts[owner][uint8(a.totalOthersEther)].add(msg.value);
     }
@@ -112,10 +112,10 @@ contract StructuredEther {
     /// @dev Return all the account data for a given address. Owner can invoke it for any address, everyone else only for their own.
     /// @return all the enums of the account. Described at the beginning of the document
     function getDynamicData(address account) public view returns (uint,uint,uint,uint,uint,uint,uint) {
-        if(msg.sender != owner) {account=msg.sender;}
+        if (msg.sender != owner) {account = msg.sender;}
         
         uint available = 0;
-        if(accounts[owner][uint8(a.ETH)] > fundingAmmount) {
+        if (accounts[owner][uint8(a.ETH)] > fundingAmmount) {
           available = accounts[owner][uint8(a.ETH)].sub(fundingAmmount);  
         }
         
@@ -126,18 +126,19 @@ contract StructuredEther {
             accounts[account][uint8(a.stakePrice)],
             price,
             available,
-            this.balance
+            address(this).balance
         );
     }
     
     /// @dev this needs to be in a seeprate function otherwise the compiler retursn Stack Too Deep
     /// @return the staked ether minus the expected interest rate on it
     function getStakedETH(address account) public view returns(uint) {
-        if(msg.sender != owner) {account=msg.sender;}
+        if (msg.sender != owner) {account = msg.sender;}
         uint interest = 0;
         
-        if(account != owner) {interest =  calcIR(account, now);}
-        else {interest =  calcIR(account, now,accounts[account][uint8(a.interimIRdate)]);}
+        if (account != owner) {
+            interest = calcIR(account, now);
+        } else {interest = calcIR(account, now,accounts[account][uint8(a.interimIRdate)]);}
       
         uint staked = accounts[account][uint8(a.stakedETH)].sub(interest);
         
@@ -165,8 +166,8 @@ contract StructuredEther {
     
     /// @dev allow the owner to configure the IRpct
     /// @param _IR new interest rate
-    function setIR(uint _IR) public ownerOnly {
-        IRpct = _IR;
+    function setIR(uint _ir) public ownerOnly {
+        IRpct = _ir;
     }
     
     /// @dev Sell your ether and buy Structured ether. Taxes are collected based on the stake amount. All taxes are trasnfered to the owners account and accessable for further funding.
@@ -200,13 +201,13 @@ contract StructuredEther {
             accounts[msg.sender][uint8(a.stakeBuyBack)] = stakeBuyBack.add(netStake.mul(price).div(1 ether));
             accounts[msg.sender][uint8(a.stakePrice)] = ((stakedETH.mul(stakePrice)).add(netStake.mul(price))).div(stakedETH.add(netStake));
             
-            accounts[owner][uint8(a.ETH)] = this.balance.sub(accounts[owner][uint8(a.stakedETH)]).sub(accounts[owner][uint8(a.totalOthersEther)]);
+            accounts[owner][uint8(a.ETH)] = address(this).balance.sub(accounts[owner][uint8(a.stakedETH)]).sub(accounts[owner][uint8(a.totalOthersEther)]);
         }
     }
     
     /// @dev Sell your structured Ether and buy Ether as the current rate.
     //  @param  amount - how much ether you want to buy
-    function buyEther(uint amount) public nonZero(amount) triggersUpdates{
+    function buyEther(uint amount) public nonZero(amount) triggersUpdates {
         collectGlobalInterest(now);
         
         accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].sub(amount);
@@ -219,12 +220,12 @@ contract StructuredEther {
     
     /// @dev Redeem your staked ether. This always happens at the stake price. You cannot redeem more than you have staked
     /// @param amount - how much ethers you want to redeem from your stake
-    function redeemStake(uint amount) public nonZero(amount) triggersUpdates  {
+    function redeemStake(uint amount) public nonZero(amount) triggersUpdates {
         collectInterest(msg.sender);
         
-        uint SEAmount = amount.mul(accounts[msg.sender][uint8(a.stakePrice)]).div(1 ether);
-        accounts[msg.sender][uint8(a.SE)] = accounts[msg.sender][uint8(a.SE)].sub(SEAmount);
-        accounts[msg.sender][uint8(a.stakeBuyBack)] = accounts[msg.sender][uint8(a.stakeBuyBack)].sub(SEAmount);
+        uint sEAmount = amount.mul(accounts[msg.sender][uint8(a.stakePrice)]).div(1 ether);
+        accounts[msg.sender][uint8(a.SE)] = accounts[msg.sender][uint8(a.SE)].sub(sEAmount);
+        accounts[msg.sender][uint8(a.stakeBuyBack)] = accounts[msg.sender][uint8(a.stakeBuyBack)].sub(sEAmount);
         
         accounts[msg.sender][uint8(a.stakedETH)] = accounts[msg.sender][uint8(a.stakedETH)].sub(amount);
         accounts[owner][uint8(a.stakedETH)] = accounts[owner][uint8(a.stakedETH)].sub(amount);
@@ -232,7 +233,7 @@ contract StructuredEther {
         accounts[msg.sender][uint8(a.ETH)] = accounts[msg.sender][uint8(a.ETH)].add(amount);
         accounts[owner][uint8(a.totalOthersEther)] = accounts[owner][uint8(a.totalOthersEther)].add(amount);
         
-        accounts[owner][uint8(a.ETH)] = this.balance.sub(accounts[owner][uint8(a.stakedETH)]).sub(accounts[owner][uint8(a.totalOthersEther)]);
+        accounts[owner][uint8(a.ETH)] = address(this).balance.sub(accounts[owner][uint8(a.stakedETH)]).sub(accounts[owner][uint8(a.totalOthersEther)]);
     }
     
     /// @dev function to withdraw ethers from the contract. You can only withdraw ether , not stakedETH and not Structured ether
@@ -253,10 +254,11 @@ contract StructuredEther {
         uint interest = calcIR(owner, dateTo);
         uint globInterest = calcIR(owner, dateTo,accounts[owner][uint8(a.interimIRdate)]);
         
-        if (globInterest < accounts[owner][uint8(a.stakedETH)]) {accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(interest);}
-        else {
+        if (globInterest < accounts[owner][uint8(a.stakedETH)]) {
+            accounts[owner][uint8(a.ETH)] = accounts[owner][uint8(a.ETH)].add(interest);
+        } else {
             accounts[owner][uint8(a.stakedETH)] = 0;
-            accounts[owner][uint8(a.ETH)] = this.balance.sub(accounts[owner][uint8(a.stakedETH)]).sub(accounts[owner][uint8(a.totalOthersEther)]);
+            accounts[owner][uint8(a.ETH)] = address(this).balance.sub(accounts[owner][uint8(a.stakedETH)]).sub(accounts[owner][uint8(a.totalOthersEther)]);
             accounts[owner][uint8(a.interimIRdate)] = dateTo;
         }
         accounts[owner][uint8(a.lastIRdate)] = dateTo;
@@ -282,9 +284,9 @@ contract StructuredEther {
     /// @dev calculates the interest of an account given a date
     /// @param account the account for which to caclulate the IR
     /// @param cutoffDate date to which the interest to be cauclaulted
-    function calcIR(address account, uint cutoffDate) internal view returns(uint){
-        uint interimIR =  accounts[account][uint8(a.lastIRdate)];
-        uint interest =  accounts[account][uint8(a.stakedETH)].mul(cutoffDate.sub(interimIR)).mul(IRpct).div(IRperiod).div(10**precision);
+    function calcIR(address account, uint cutoffDate) internal view returns(uint) {
+        uint interimIR = accounts[account][uint8(a.lastIRdate)];
+        uint interest = accounts[account][uint8(a.stakedETH)].mul(cutoffDate.sub(interimIR)).mul(IRpct).div(IRperiod).div(10**precision);
         if (interest > accounts[account][uint8(a.stakedETH)]) {interest = accounts[account][uint8(a.stakedETH)];}
         return interest;
     }
@@ -292,14 +294,14 @@ contract StructuredEther {
     /// @dev calculates the interest of an account given a date with a reference date for the cauclultion
     /// @param account the account for which to caclulate the IR
     /// @param cutoffDate date to which the interest to be cauclaulted
-    function calcIR(address account, uint cutoffDate, uint referenceDate) internal view returns(uint){
-        uint interest =  accounts[account][uint8(a.stakedETH)].mul(cutoffDate.sub(referenceDate)).mul(IRpct).div(IRperiod).div(10**precision);
+    function calcIR(address account, uint cutoffDate, uint referenceDate) internal view returns(uint) {
+        uint interest = accounts[account][uint8(a.stakedETH)].mul(cutoffDate.sub(referenceDate)).mul(IRpct).div(IRperiod).div(10**precision);
         if (interest > accounts[account][uint8(a.stakedETH)]) {interest = accounts[account][uint8(a.stakedETH)];}
         return interest;
     }
     
     /// @dev Neeed while still testing to be removed in the final version
-    function kill() public ownerOnly{
+    function kill() public ownerOnly {
         selfdestruct(owner);
     }
 }
